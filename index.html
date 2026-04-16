@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MEME MACHINE 3000</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Permanent+Marker&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --panel: #1a1a1a;
+      --border: #2e2e2e;
+      --accent: #FFE500;
+      --accent2: #FF3C3C;
+      --text: #f0f0f0;
+      --muted: #888;
+      --radius: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 24px 40px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-shadow: 3px 3px 0 var(--accent2);
+    }
+
+    .logo span { color: var(--accent2); }
+
+    .badge {
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    main {
+      width: 100%;
+      max-width: 1100px;
+      padding: 30px 20px 60px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 30px;
+    }
+
+    /* ===== CANVAS SIDE ===== */
+    .canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .canvas-container {
+      position: relative;
+      background: #111;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #memeCanvas {
+      display: block;
+      max-width: 100%;
+      cursor: crosshair;
+      border-radius: calc(var(--radius) - 2px);
+    }
+
+    .canvas-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .canvas-placeholder svg { opacity: 0.3; }
+
+    .canvas-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== CONTROLS SIDE ===== */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+
+    /* Upload */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(255,229,0,0.04);
+    }
+    .upload-zone p { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+    .upload-zone strong { color: var(--text); font-size: 0.9rem; }
+    #fileInput { display: none; }
+
+    /* Template grid */
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .tpl-img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .tpl-img:hover { border-color: var(--accent); transform: scale(1.04); }
+    .tpl-img.selected { border-color: var(--accent2); }
+
+    /* Text inputs */
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"], select, input[type="range"], input[type="color"] {
+      width: 100%;
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+
+    input[type="range"] {
+      padding: 4px 0;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    input[type="color"] {
+      padding: 2px 4px;
+      height: 38px;
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      letter-spacing: 0.5px;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    .btn-danger {
+      background: var(--accent2);
+      color: #fff;
+    }
+    .btn-danger:hover { opacity: 0.88; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-download {
+      background: linear-gradient(135deg, #FFE500 0%, #FFB800 100%);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      padding: 14px 28px;
+      border-radius: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Stickers */
+    .sticker-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .sticker-btn {
+      font-size: 1.5rem;
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .sticker-btn:hover { transform: scale(1.2); border-color: var(--accent); }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 0.88rem;
+      transition: transform 0.3s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; }
+      header { padding: 16px 20px; }
+      .logo { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span class="logo">MEME <span>MACHINE</span> <sup class="badge">3000</sup></span>
+  </div>
+  <div style="color:var(--muted);font-size:0.8rem;">Open Source · No Watermark · Free Forever</div>
+</header>
+
+<main>
+  <!-- Canvas -->
+  <div class="canvas-wrap">
+    <div class="canvas-container" id="canvasContainer">
+      <div class="canvas-placeholder" id="placeholder">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <strong>Pick a template or upload an image</strong>
+        <span>Your meme will appear here</span>
+      </div>
+      <canvas id="memeCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="canvas-actions">
+      <button class="btn btn-primary" id="addTextBtn">＋ Add Text</button>
+      <button class="btn btn-outline" id="clearTextsBtn">Clear Texts</button>
+      <button class="btn btn-danger" id="resetBtn">Reset</button>
+    </div>
+
+    <button class="btn btn-download" id="downloadBtn">⬇ DOWNLOAD MEME</button>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+
+    <!-- Upload -->
+    <div class="card">
+      <div class="card-title">📁 Upload Image</div>
+      <div class="upload-zone" id="uploadZone">
+        <strong>Click to upload or drag & drop</strong>
+        <p>PNG, JPG, GIF, WEBP</p>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" />
+    </div>
+
+    <!-- Templates -->
+    <div class="card">
+      <div class="card-title">🔥 Templates</div>
+      <div class="template-grid" id="templateGrid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Text Style -->
+    <div class="card">
+      <div class="card-title">✏️ Text Style</div>
+
+      <label>Top Text</label>
+      <input type="text" id="topText" placeholder="Enter top text..." />
+
+      <label>Bottom Text</label>
+      <input type="text" id="bottomText" placeholder="Enter bottom text..." />
+
+      <div class="row">
+        <div>
+          <label>Font</label>
+          <select id="fontSelect">
+            <option value="Impact">Impact</option>
+            <option value="'Bebas Neue'">Bebas Neue</option>
+            <option value="'Permanent Marker'">Permanent Marker</option>
+            <option value="Arial Black">Arial Black</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Comic Sans MS">Comic Sans</option>
+          </select>
+        </div>
+        <div>
+          <label>Size</label>
+          <input type="range" id="fontSize" min="20" max="120" value="52" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Color</label>
+          <input type="color" id="textColor" value="#ffffff" />
+        </div>
+        <div>
+          <label>Stroke</label>
+          <input type="color" id="strokeColor" value="#000000" />
+        </div>
+      </div>
+
+      <label>Stroke Width</label>
+      <input type="range" id="strokeWidth" min="0" max="12" value="4" />
+
+      <div class="row">
+        <div>
+          <label>Align</label>
+          <select id="textAlign">
+            <option value="center">Center</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+        <div>
+          <label>Style</label>
+          <select id="textStyle">
+            <option value="normal">Normal</option>
+            <option value="italic">Italic</option>
+            <option value="bold">Bold</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stickers -->
+    <div class="card">
+      <div class="card-title">😂 Stickers</div>
+      <div class="sticker-grid" id="stickerGrid"></div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast">✅ Meme downloaded!</div>
+
+<script>
+  // ======= TEMPLATES =======
+  const templates = [
+    { label: "Drake", url: "https://i.imgflip.com/30b1gx.jpg" },
+    { label: "Distracted BF", url: "https://i.imgflip.com/1ur9b0.jpg" },
+    { label: "Two Buttons", url: "https://i.imgflip.com/1g8my4.jpg" },
+    { label: "Change My Mind", url: "https://i.imgflip.com/24y43o.jpg" },
+    { label: "Surprised Pikachu", url: "https://i.imgflip.com/2kbn1e.jpg" },
+    { label: "This Is Fine", url: "https://i.imgflip.com/wxica.jpg" },
+  ];
+
+  const stickers = ["😂","🔥","💀","🤣","😭","💯","🤡","🥲","👀","🗿","😤","✅","❌","⚠️","🚀","🎯"];
+
+  // ======= STATE =======
+  let currentImage = null;
+  let textLayers = [];
+  let stickerLayers = [];
+
+  const canvas = document.getElementById("memeCanvas");
+  const ctx = canvas.getContext("2d");
+  const placeholder = document.getElementById("placeholder");
+  const templateGrid = document.getElementById("templateGrid");
+  const stickerGrid = document.getElementById("stickerGrid");
+
+  // ======= BUILD TEMPLATE GRID =======
+  templates.forEach((t, i) => {
+    const img = document.createElement("img");
+    img.src = t.url;
+    img.alt = t.label;
+    img.className = "tpl-img";
+    img.title = t.label;
+    img.crossOrigin = "anonymous";
+    img.addEventListener("click", () => {
+      document.querySelectorAll(".tpl-img").forEach(el => el.classList.remove("selected"));
+      img.classList.add("selected");
+      loadImageFromURL(t.url);
+    });
+    templateGrid.appendChild(img);
+  });
+
+  // ======= BUILD STICKER GRID =======
+  stickers.forEach(emoji => {
+    const btn = document.createElement("button");
+    btn.className = "sticker-btn";
+    btn.textContent = emoji;
+    btn.title = "Add sticker";
+    btn.addEventListener("click", () => {
+      if (!currentImage) return;
+      stickerLayers.push({ emoji, x: canvas.width / 2, y: canvas.height / 2, size: 60 });
+      render();
+    });
+    stickerGrid.appendChild(btn);
+  });
+
+  // ======= LOAD IMAGE =======
+  function loadImageFromURL(url) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      currentImage = img;
+      setupCanvas(img);
+      render();
+    };
+    img.onerror = () => alert("Failed to load image. Try uploading directly.");
+    img.src = url;
+  }
+
+  function setupCanvas(img) {
+    const maxW = document.getElementById("canvasContainer").clientWidth - 4;
+    const scale = Math.min(1, maxW / img.naturalWidth);
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
+    canvas.style.display = "block";
+    placeholder.style.display = "none";
+  }
+
+  // ======= RENDER =======
+  function render() {
+    if (!currentImage) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+    // draw text layers
+    textLayers.forEach(layer => drawText(layer));
+
+    // draw top/bottom text
+    const top = document.getElementById("topText").value.trim();
+    const bot = document.getElementById("bottomText").value.trim();
+    const style = getTextStyle();
+
+    if (top) drawMemeText(top, canvas.width / 2, style.size + 10, style);
+    if (bot) drawMemeText(bot, canvas.width / 2, canvas.height - 14, style);
+
+    // draw stickers
+    stickerLayers.forEach(s => {
+      ctx.font = `${s.size}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(s.emoji, s.x, s.y);
+    });
+  }
+
+  function getTextStyle() {
+    return {
+      font: document.getElementById("fontSelect").value,
+      size: parseInt(document.getElementById("fontSize").value),
+      color: document.getElementById("textColor").value,
+      stroke: document.getElementById("strokeColor").value,
+      strokeW: parseInt(document.getElementById("strokeWidth").value),
+      align: document.getElementById("textAlign").value,
+      style: document.getElementById("textStyle").value,
+    };
+  }
+
+  function drawMemeText(text, x, y, s) {
+    ctx.save();
+    const fontStr = `${s.style !== "normal" ? s.style + " " : ""}${s.size}px ${s.font}`;
+    ctx.font = fontStr;
+    ctx.textAlign = s.align;
+    ctx.textBaseline = "alphabetic";
+
+    // Wrap text
+    const lines = wrapText(ctx, text.toUpperCase(), canvas.width - 30);
+    const lineH = s.size * 1.15;
+
+    lines.forEach((line, i) => {
+      const ly = y - (lines.length - 1 - i) * lineH;
+      if (s.strokeW > 0) {
+        ctx.strokeStyle = s.stroke;
+        ctx.lineWidth = s.strokeW;
+        ctx.lineJoin = "round";
+        ctx.strokeText(line, x, ly);
+      }
+      ctx.fillStyle = s.color;
+      ctx.fillText(line, x, ly);
+    });
+    ctx.restore();
+  }
+
+  function drawText(layer) {
+    ctx.save();
+    ctx.font = `bold ${layer.size}px Impact`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+    ctx.strokeText(layer.text, layer.x, layer.y);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(layer.text, layer.x, layer.y);
+    ctx.restore();
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    const words = text.split(" ");
+    const lines = [];
+    let current = "";
+    words.forEach(w => {
+      const test = current ? current + " " + w : w;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = w;
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  // ======= EVENTS =======
+  // Upload
+  const uploadZone = document.getElementById("uploadZone");
+  const fileInput = document.getElementById("fileInput");
+
+  uploadZone.addEventListener("click", () => fileInput.click());
+  uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+  uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+  uploadZone.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadZone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) readFile(fileInput.files[0]);
+  });
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => { currentImage = img; setupCanvas(img); render(); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Live re-render on input
+  ["topText","bottomText","fontSelect","fontSize","textColor","strokeColor","strokeWidth","textAlign","textStyle"].forEach(id => {
+    document.getElementById(id).addEventListener("input", render);
+  });
+
+  // Add custom text layer
+  document.getElementById("addTextBtn").addEventListener("click", () => {
+    if (!currentImage) { alert("Load an image first!"); return; }
+    const txt = prompt("Enter text for custom layer:");
+    if (txt) {
+      textLayers.push({ text: txt, x: canvas.width / 2, y: canvas.height / 2, size: 40 });
+      render();
+    }
+  });
+
+  document.getElementById("clearTextsBtn").addEventListener("click", () => {
+    textLayers = [];
+    stickerLayers = [];
+    render();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    currentImage = null;
+    textLayers = [];
+    stickerLayers = [];
+    canvas.style.display = "none";
+    placeholder.style.display = "flex";
+    document.getElementById("topText").value = "";
+    document.getElementById("bottomText").value = "";
+    document.querySelectorAll(".tpl-img").forEach(el => el.classList.remove("selected"));
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+
+  // Download
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+    if (!currentImage) { alert("No meme to download!"); return; }
+    render();
+    const link = document.createElement("a");
+    link.download = "meme-" + Date.now() + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("✅ Meme downloaded!");
+  });
+
+  // Draggable text layers on canvas
+  let dragging = null;
+  canvas.addEventListener("mousedown", e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+
+    [...stickerLayers, ...textLayers].forEach((layer, i) => {
+      const arr = stickerLayers.includes(layer) ? stickerLayers : textLayers;
+      const size = layer.size || 60;
+      if (Math.abs(mx - layer.x) < size && Math.abs(my - layer.y) < size) {
+        dragging = { arr, idx: arr.indexOf(layer), offX: mx - layer.x, offY: my - layer.y };
+      }
+    });
+  });
+
+  canvas.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    dragging.arr[dragging.idx].x = (e.clientX - rect.left) * scaleX - dragging.offX;
+    dragging.arr[dragging.idx].y = (e.clientY - rect.top) * scaleY - dragging.offY;
+    render();
+  });
+
+  canvas.addEventListener("mouseup", () => dragging = null);
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
+  }
+</script>
+</body>
+</html>
